@@ -5,6 +5,7 @@ package websocket
 import (
 	"io"
 	"net"
+	"sync"
 	"time"
 
 	"v2ray.com/core/common/buf"
@@ -22,6 +23,12 @@ type connection struct {
 	conn       *websocket.Conn
 	reader     io.Reader
 	remoteAddr net.Addr
+
+	heartbeatquit     chan struct{}
+	heartbeatlock     sync.RWMutex
+	lastheartbeat     time.Time
+	heartbeatinterval time.Duration
+	heartbeattimeout  time.Duration
 }
 
 func newConnection(conn *websocket.Conn, remoteAddr net.Addr) *connection {
@@ -111,4 +118,37 @@ func (c *connection) SetReadDeadline(t time.Time) error {
 
 func (c *connection) SetWriteDeadline(t time.Time) error {
 	return c.conn.SetWriteDeadline(t)
+}
+
+func (c *connection) SendPingFrame() error {
+	return c.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second*5))
+}
+
+func (c *connection) PongFrameHandler(appData string) error {
+	c.heartbeatlock.Lock()
+	defer c.heartbeatlock.Unlock()
+	c.lastheartbeat = time.Now()
+	return nil
+}
+
+func (c *connection) HeartBeat() {
+	timer := time.NewTimer(c.heartbeatinterval)
+	c.lastheartbeat = time.Now()
+	c.conn.SetPongHandler(c.PongFrameHandler)
+	for {
+		select {
+		case <-c.heartbeatquit:
+			return
+		case <-timer.C:
+			timer.Reset(c.heartbeatinterval)
+			_ = c.SendPingFrame()
+			c.heartbeatlock.Lock()
+			if time.Now().Sub(c.lastheartbeat) > c.heartbeattimeout {
+				c.heartbeatlock.Unlock()
+				c.Close()
+				return
+			}
+			c.heartbeatlock.Unlock()
+		}
+	}
 }

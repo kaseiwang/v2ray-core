@@ -2,8 +2,9 @@ package websocket
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -68,6 +69,8 @@ type Config struct {
 	// URL path to the WebSocket service. Empty value means root(/).
 	Path                 string    `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	Header               []*Header `protobuf:"bytes,3,rep,name=header,proto3" json:"header,omitempty"`
+	HeartBeatInterval    int64     `protobuf:"varint,4,opt,name=heartbeatinterval,proto3" json:"heartbeatinterval,omitempty"`
+	HeartBeatTimeout     int64     `protobuf:"varint,5,opt,name=heartbeattimeout,proto3" json:"heartbeattimeout,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
 	XXX_sizecache        int32     `json:"-"`

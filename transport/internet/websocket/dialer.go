@@ -63,5 +63,13 @@ func dialWebsocket(ctx context.Context, dest net.Destination, streamSettings *in
 		return nil, newError("failed to dial to (", uri, "): ", reason).Base(err)
 	}
 
-	return newConnection(conn, conn.RemoteAddr()), nil
+	ret := newConnection(conn, conn.RemoteAddr())
+
+	if wsSettings.GetHeartBeatInterval() > 0 {
+		ret.heartbeatquit = make(chan struct{}, 1)
+		ret.heartbeatinterval = wsSettings.GetHeartBeatInterval()
+		ret.heartbeattimeout = wsSettings.GetHeartBeatTimeout()
+		go ret.HeartBeat()
+	}
+	return ret, nil
 }

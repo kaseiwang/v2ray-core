@@ -4,6 +4,7 @@ package websocket
 
 import (
 	"net/http"
+	"time"
 
 	"v2ray.com/core/common"
 	"v2ray.com/core/transport/internet"
@@ -28,6 +29,14 @@ func (c *Config) GetRequestHeader() http.Header {
 		header.Add(h.Key, h.Value)
 	}
 	return header
+}
+
+func (c *Config) GetHeartBeatInterval() time.Duration {
+	return time.Duration(c.HeartBeatInterval) * time.Millisecond
+}
+
+func (c *Config) GetHeartBeatTimeout() time.Duration {
+	return time.Duration(c.HeartBeatTimeout) * time.Millisecond
 }
 
 func init() {
